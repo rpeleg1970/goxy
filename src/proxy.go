@@ -5,6 +5,8 @@ import (
   "fmt"
   "net"
   "proxy"
+  "log"
+  "log/syslog"
 )
 
 var gPort int
@@ -16,8 +18,17 @@ func init() {
 }
 
 func main() {
+  // the lazy man solution: set the rsyslog instance as the log.std object so it
+  // can be shared across all files. Another option is to follow the code under
+  // http://golang.org/src/pkg/log/log.go to create a synched singleton rsyslog
+  // writer
+  slog, err := syslog.New(syslog.LOG_INFO, "goxy")
+  log.SetOutput(slog)
+  log.SetFlags(log.Lshortfile)
+  log.Println("hello from goxy")
+  
   flag.Parse()
-  fmt.Println("listening on port ",gPortStr)
+  log.Println("listening on port ",gPortStr)
   ln, err := net.Listen("tcp",gPortStr)
   if err!=nil {
     // handle error
@@ -28,7 +39,7 @@ func main() {
       // handle error
       continue
     }
-    fmt.Println("mainloop received: ",conn.LocalAddr(), conn.RemoteAddr())
+    log.Println("mainloop received: ",conn.LocalAddr(), conn.RemoteAddr())
     go proxy.Handle(conn)
   }
 }
